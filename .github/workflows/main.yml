@@ -15,6 +15,7 @@ jobs:
 
       - name: Create config.js with secrets
         run: |
+          sed -i 's|химии|chemistry|g' ai/ai.html
           echo "window.GEN_API_API_KEY = '${{ secrets.GEN_API_API_KEY }}';" > ./config.js
           echo "✓ config.js created"
           cat ./config.js
