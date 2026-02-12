@@ -105,7 +105,7 @@ function sendMessage() {
     waitResponse = true;
 
     // Имитация задержки перед ответом
-    AIFeedback(message, window.GEN_API_API_KEY).then(response => {
+    AIFeedback(message, __GEN_API_API_KEY__).then(response => {
         placeholder.innerHTML = formater(response);
         chatContainer.scrollTop = chatContainer.scrollHeight;
         waitResponse = false;
