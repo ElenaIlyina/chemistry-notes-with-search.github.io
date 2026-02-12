@@ -18,6 +18,7 @@ jobs:
           echo "window.GEN_API_API_KEY = '${{ secrets.GEN_API_API_KEY }}';" > ./config.js
           echo "✓ config.js created"
           cat ./config.js
+          ls -la .
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
