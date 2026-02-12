@@ -18,7 +18,7 @@ jobs:
           sed -i "s|__GEN_API_API_KEY__|${{ secrets.GEN_API_API_KEY }}|g" ai/aiChat.js
           
           # Отладка: проверяем, что замена прошла (без вывода самого ключа!)
-          if grep -q "sk-" aiChat.js; then
+          if grep -q "sk-" ai/aiChat.js; then
             echo "✓ API key injected successfully"
           else
             echo "✗ WARNING: Placeholder not replaced!"
