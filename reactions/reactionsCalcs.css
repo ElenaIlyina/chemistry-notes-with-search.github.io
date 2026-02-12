@@ -1,0 +1,97 @@
+/* СТИЛИ ДЛЯ КОНСТРУКТОРА РЕАКЦИЙ */
+.reaction-builder {
+    background-color: #f8f9ff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e0e0ff;
+    margin: 30px 0;
+    max-width: 700px;
+    font-size: 16px;
+}
+
+.input-group {
+    margin-bottom: 18px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+    color: #333;
+}
+
+.input-group select {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 16px;
+    border: 2px solid #4a90e2;
+    border-radius: 8px;
+    outline: none;
+    background-color: white;
+    color: #333;
+    transition: all 0.3s ease;
+}
+
+.input-group select:focus {
+    border-color: #3a7bc8;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+}
+
+.result-box,
+.formula-box,
+.comment-box {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background-color: white;
+    border-left: 5px solid #4a90e2;
+    border-radius: 6px;
+    font-size: 16px;
+    color: #222;
+}
+
+.comment-box {
+    background-color: #f0f7ff;
+    border-color: #4a90e2;
+    font-style: italic;
+    color: #444;
+}
+
+/* 🌙 ТЁМНАЯ ТЕМА — Адаптация калькулятора реакций */
+[theme="dark"] {
+    .reaction-builder {
+        background-color: #2d2d2d;
+        border-color: #444;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .input-group label {
+        color: #e0e0e0;
+    }
+
+    .input-group select {
+        background-color: #333;
+        color: #e0e0e0;
+        border-color: #555;
+    }
+
+    .input-group select:focus {
+        border-color: #4a90e2;
+        box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        background-color: #444;
+    }
+
+    .result-box,
+    .formula-box,
+    .comment-box {
+        background-color: #333;
+        color: #e0e0e0;
+        border-left-color: #4a90e2;
+    }
+
+    .comment-box {
+        background-color: #333;
+        color: #aaa;
+        font-style: italic;
+    }
+}
