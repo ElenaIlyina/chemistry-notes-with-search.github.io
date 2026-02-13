@@ -1,119 +1,134 @@
 const chatContainer = document.getElementById('chat-container');
 const userInput = document.getElementById('user-input');
 const sendButton = document.getElementById('send-button');
-let messages = [{"role": "system", "content": "Прими на себя роль эксперта в химми"}]
+
+// URL вашего Cloudflare Worker прокси
+const DEEPSEEK_PROXY_URL = 'https://ваш-воркер.workers.dev/api/deepseek';
+
+let messages = [
+  { role: 'system', content: 'Прими на себя роль эксперта в химии' }
+];
 let waitResponse = false;
 
+/**
+ * Форматирование текста (Markdown → HTML)
+ */
 function formater(text) {
-    let strongClose = false;
-    for (let i = 0; i < text.length-1; ++i) {
-        if (text[i] == '*') {
-            if (text[i+1] == '*') {
-                // <strong></strong>
-                text = text.slice(0, i) + (!strongClose ? "<strong>" : '</strong>') + text.slice(i + 2);
-                strongClose = !strongClose;
-            }
-            else
-                text = text.slice(0, i) + '•' + text.slice(i + 1);
-        }
+  let strongClose = false;
+  for (let i = 0; i < text.length - 1; ++i) {
+    if (text[i] === '*') {
+      if (text[i + 1] === '*') {
+        // <strong></strong>
+        text = text.slice(0, i) + (!strongClose ? '<strong>' : '</strong>') + text.slice(i + 2);
+        strongClose = !strongClose;
+      } else {
+        text = text.slice(0, i) + '•' + text.slice(i + 1);
+      }
     }
-    
-    return text;
+  }
+  
+  return text;
 }
 
 /**
- * Функция для общения с GenAPI
- * @param {string} message - Ваше сообщение для нейросети
- * @param {string} token - Ваш API токен
- * @param {string} modelId - ID модели (по умолчанию gpt-4.1)
- * @returns {Promise<string>} - Ответ нейросети
+ * Отправка запроса к DeepSeek через прокси
+ * @param {string} message - Сообщение пользователя
+ * @returns {Promise<string>} - Ответ от нейросети
  */
-async function AIFeedback(message, token, modelId = 'gemini-2-5-flash-lite') {
-    const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
+async function askDeepSeek(message) {
+  try {
+    // Добавляем сообщение пользователя в историю
+    messages.push({ role: 'user', content: message });
+    
+    // Отправляем запрос к прокси
+    const response = await fetch(DEEPSEEK_PROXY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat', // или 'deepseek-coder', 'deepseek-reasoner'
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 2048
+      })
+    });
 
-    try {
-        // 1. Создаем запрос на генерацию
-        messages.push({"role": "user", "content": message})
-        const createRes = await fetch(`https://api.gen-api.ru/api/v1/networks/${modelId}`, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                'messages': messages
-            })
-        });
-
-        const createData = await createRes.json();
-
-        if (!createRes.ok) {
-            throw new Error(`Ошибка создания запроса: ${createData.message || createRes.statusText}`);
-        }
-
-        const requestId = createData.request_id;
-        //console.log(`Задача создана, ID: ${requestId}. Ждем ответа...`);
-
-        // 2. Опрос статуса (Polling)
-        while (true) {
-            const statusRes = await fetch(`https://api.gen-api.ru/api/v1/request/get/${requestId}`, {
-                method: 'GET',
-                headers: headers
-            });
-
-            const statusData = await statusRes.json();
-
-            if (statusData.status === 'success') {
-                // Возвращаем финальный текстовый результат
-                messages.push({"role": "assistant", "content": statusData.full_response[0].message.content})
-                return statusData.full_response[0].message.content; 
-            } 
-            
-            if (statusData.status === 'failed' || statusData.status === 'error') {
-                throw new Error(`Нейросеть вернула ошибку: ${JSON.stringify(statusData.result || 'Unknown error')}`);
-            }
-
-            // Если еще в процессе (processing/starting), ждем 2 секунды перед следующей проверкой
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-
-    } catch (error) {
-        console.error('Ошибка при работе с GenAPI:', error.message);
-        throw error;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || `HTTP ${response.status}`);
     }
+
+    const data = await response.json();
+    
+    // Проверяем формат ответа
+    if (data.choices?.[0]?.message?.content) {
+      const aiResponse = data.choices[0].message.content;
+      
+      // Добавляем ответ в историю
+      messages.push({ role: 'assistant', content: aiResponse });
+      
+      return aiResponse;
+    }
+    
+    throw new Error('Неожиданный формат ответа от API');
+    
+  } catch (error) {
+    console.error('Ошибка при работе с DeepSeek:', error);
+    throw error;
+  }
 }
 
+/**
+ * Добавление сообщения в чат
+ */
 function addMessage(text, isUser) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
-    messageDiv.innerHTML = text;
-    chatContainer.appendChild(messageDiv);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-    return messageDiv;
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
+  messageDiv.innerHTML = text;
+  chatContainer.appendChild(messageDiv);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+  return messageDiv;
 }
 
+/**
+ * Отправка сообщения
+ */
 function sendMessage() {
-    const message = userInput.value.trim();
-    if (message === '' || waitResponse) return;
+  const message = userInput.value.trim();
+  if (message === '' || waitResponse) return;
 
-    // Добавляем сообщение пользователя
-    addMessage(message, true);
-    userInput.value = '';
+  // Добавляем сообщение пользователя
+  addMessage(message, true);
+  userInput.value = '';
 
-    // Показываем "..." от ИИ
-    const placeholder = addMessage('...', false);
-    waitResponse = true;
+  // Показываем "..." от ИИ
+  const placeholder = addMessage('...', false);
+  waitResponse = true;
 
-    // Имитация задержки перед ответом
-    AIFeedback(message, __GEN_API_API_KEY__).then(response => {
-        placeholder.innerHTML = formater(response);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        waitResponse = false;
+  // Отправляем запрос к DeepSeek
+  askDeepSeek(message)
+    .then(response => {
+      placeholder.innerHTML = formater(response);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
     })
+    .catch(error => {
+      placeholder.innerHTML = `❌ Ошибка: ${error.message}`;
+      console.error('Ошибка:', error);
+    })
+    .finally(() => {
+      waitResponse = false;
+    });
 }
 
 // Отправка по клику и по Enter
 sendButton.addEventListener('click', sendMessage);
 userInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
 });
+
+// Автофокус на поле ввода при загрузке
+userInput.focus();
