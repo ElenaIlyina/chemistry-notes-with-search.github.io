@@ -3,7 +3,7 @@ const userInput = document.getElementById('user-input');
 const sendButton = document.getElementById('send-button');
 
 // URL вашего Cloudflare Worker прокси
-const DEEPSEEK_PROXY_URL = 'https://ваш-воркер.workers.dev/api/deepseek';
+const DEEPSEEK_PROXY_URL = 'https://lingering-tooth-e666.elena-ilyina.workers.dev/api/deepseek';
 
 let messages = [
   { role: 'system', content: 'Прими на себя роль эксперта в химии' }
